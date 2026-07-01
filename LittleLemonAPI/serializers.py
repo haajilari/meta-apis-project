@@ -56,6 +56,12 @@ class OrderItemSerializer(serializers.ModelSerializer):
 class OrderSerializer(serializers.ModelSerializer):
     order_items = serializers.SerializerMethodField()
     user = serializers.PrimaryKeyRelatedField(read_only=True)
+    total = serializers.DecimalField(
+        max_digits=6,
+        decimal_places=2,
+        read_only=True
+    )
+    date = serializers.DateField(read_only=True)
 
     class Meta:
         model = Order
