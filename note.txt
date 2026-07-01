@@ -1,0 +1,15 @@
+Superuser:
+username: admin
+password: admin@12345
+
+Manager:
+username: manager1
+password: Larlary@1373
+
+Delivery crew:
+username: delivery1
+password: Larlary@1373
+
+Customer:
+username: customer1
+password: Larlary@1373
