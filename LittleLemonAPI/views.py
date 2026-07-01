@@ -4,10 +4,9 @@ from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Category, MenuItem
-from .serializers import CategorySerializer, MenuItemSerializer, UserSerializer
-from .permissions import is_manager
-
+from .models import Category, MenuItem, Cart
+from .serializers import CategorySerializer, MenuItemSerializer, UserSerializer, CartSerializer
+from .permissions import is_manager, is_customer
 
 class CategoryListCreateView(generics.ListCreateAPIView):
     queryset = Category.objects.all()
@@ -225,5 +224,62 @@ class DeliveryCrewUserDetailView(APIView):
 
         return Response(
             {'message': 'user removed from the delivery crew group'},
+            status=status.HTTP_200_OK
+        )
+    
+class CartView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if not is_customer(request.user):
+            return Response(
+                {'message': 'Only customers can access the cart.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        cart_items = Cart.objects.filter(user=request.user)
+        serializer = CartSerializer(cart_items, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        if not is_customer(request.user):
+            return Response(
+                {'message': 'Only customers can add items to the cart.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        serializer = CartSerializer(data=request.data)
+
+        if serializer.is_valid():
+            menuitem = serializer.validated_data['menuitem']
+            quantity = serializer.validated_data['quantity']
+            unit_price = menuitem.price
+            price = unit_price * quantity
+
+            cart_item, created = Cart.objects.update_or_create(
+                user=request.user,
+                menuitem=menuitem,
+                defaults={
+                    'quantity': quantity,
+                    'unit_price': unit_price,
+                    'price': price,
+                }
+            )
+
+            response_serializer = CartSerializer(cart_item)
+            return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request):
+        if not is_customer(request.user):
+            return Response(
+                {'message': 'Only customers can delete cart items.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        Cart.objects.filter(user=request.user).delete()
+        return Response(
+            {'message': 'cart cleared'},
             status=status.HTTP_200_OK
         )
