@@ -1,14 +1,17 @@
 from django.contrib import admin
 from django.urls import path, include
 from rest_framework.authtoken.views import obtain_auth_token
+from LittleLemonAPI.views import UserRegistrationView
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
 
-    # Djoser user registration endpoints
-    path('api/users/', include('djoser.urls')),
+    # Required project registration endpoint
+    path('api/users/', UserRegistrationView.as_view()),
 
-    # Djoser token endpoint
+    # Djoser endpoints
+    path('api/users/', include('djoser.urls')),
     path('api/users/', include('djoser.urls.authtoken')),
 
     # Required project login endpoint

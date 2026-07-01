@@ -2,13 +2,13 @@ from django.contrib.auth.models import User, Group
 from django.utils import timezone
 from django.db import transaction
 from rest_framework import generics, status
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .models import Category, MenuItem, Cart, Order, OrderItem
 from .serializers import CategorySerializer, MenuItemSerializer, UserSerializer, CartSerializer, OrderSerializer
 from .permissions import is_manager, is_customer, is_delivery_crew
-
+from rest_framework.pagination import PageNumberPagination
 
 class CategoryListCreateView(generics.ListCreateAPIView):
     queryset = Category.objects.all()
@@ -293,15 +293,42 @@ class OrderListCreateView(APIView):
 
     def get(self, request):
         if is_manager(request.user):
-            orders = Order.objects.all().order_by('-id')
+            orders = Order.objects.all()
         elif is_delivery_crew(request.user):
-            orders = Order.objects.filter(delivery_crew=request.user).order_by('-id')
+            orders = Order.objects.filter(delivery_crew=request.user)
         else:
-            orders = Order.objects.filter(user=request.user).order_by('-id')
+            orders = Order.objects.filter(user=request.user)
 
-        serializer = OrderSerializer(orders, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        status_filter = request.query_params.get('status')
+        if status_filter is not None:
+            if status_filter in ['true', 'True', '1']:
+                orders = orders.filter(status=True)
+            elif status_filter in ['false', 'False', '0']:
+                orders = orders.filter(status=False)
 
+        date_filter = request.query_params.get('date')
+        if date_filter:
+            orders = orders.filter(date=date_filter)
+
+        ordering = request.query_params.get('ordering', '-id')
+        allowed_ordering_fields = [
+            'id', '-id',
+            'date', '-date',
+            'total', '-total',
+            'status', '-status',
+        ]
+
+        if ordering in allowed_ordering_fields:
+            orders = orders.order_by(ordering)
+        else:
+            orders = orders.order_by('-id')
+
+        paginator = PageNumberPagination()
+        paginator.page_size = 2
+        paginated_orders = paginator.paginate_queryset(orders, request)
+
+        serializer = OrderSerializer(paginated_orders, many=True)
+        return paginator.get_paginated_response(serializer.data)
     def post(self, request):
         if not is_customer(request.user):
             return Response(
@@ -471,4 +498,40 @@ class OrderDetailView(APIView):
         return Response(
             {'message': 'order deleted'},
             status=status.HTTP_200_OK
+        )
+    
+
+class UserRegistrationView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        username = request.data.get('username')
+        password = request.data.get('password')
+        email = request.data.get('email', '')
+
+        if not username or not password:
+            return Response(
+                {'message': 'username and password are required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if User.objects.filter(username=username).exists():
+            return Response(
+                {'message': 'username already exists'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        user = User.objects.create_user(
+            username=username,
+            password=password,
+            email=email
+        )
+
+        return Response(
+            {
+                'id': user.id,
+                'username': user.username,
+                'email': user.email
+            },
+            status=status.HTTP_201_CREATED
         )

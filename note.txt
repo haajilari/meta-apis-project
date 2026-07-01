@@ -13,3 +13,7 @@ password: Larlary@1373
 Customer:
 username: customer1
 password: Larlary@1373
+
+  "username: "customer2",
+  "password": "testpass123",
+  "email": "customer2@example.com"
