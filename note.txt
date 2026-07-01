@@ -17,3 +17,76 @@ password: Larlary@1373
   "username: "customer2",
   "password": "testpass123",
   "email": "customer2@example.com"
+
+
+Important API endpoints:
+
+Register user:
+
+POST /api/users/
+
+Login:
+
+POST /token/login/
+
+Current user:
+
+GET /api/users/users/me/
+
+Categories:
+
+GET /api/categories
+
+POST /api/categories
+
+Menu items:
+
+GET /api/menu-items
+
+POST /api/menu-items
+
+GET /api/menu-items/{id}
+
+PUT /api/menu-items/{id}
+
+PATCH /api/menu-items/{id}
+
+DELETE /api/menu-items/{id}
+
+Manager group:
+
+GET /api/groups/manager/users
+
+POST /api/groups/manager/users
+
+DELETE /api/groups/manager/users/{userId}
+
+Delivery crew group:
+
+GET /api/groups/delivery-crew/users
+
+POST /api/groups/delivery-crew/users
+
+DELETE /api/groups/delivery-crew/users/{userId}
+
+Cart:
+
+GET /api/cart/menu-items
+
+POST /api/cart/menu-items
+
+DELETE /api/cart/menu-items
+
+Orders:
+
+GET /api/orders
+
+POST /api/orders
+
+GET /api/orders/{orderId}
+
+PUT /api/orders/{orderId}
+
+PATCH /api/orders/{orderId}
+
+DELETE /api/orders/{orderId}
